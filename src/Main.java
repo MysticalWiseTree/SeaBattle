@@ -5,6 +5,58 @@ public class Main {
     static byte GameStatus = 1;
     static JButton CurrentButton1 = null;
     static JButton CurrentButton2 = null;
+    public static void MakeCellsUnavailable(JButton Border1, JButton Border2, int[] FieldStatusMassive, JButton[] FieldMassive) {
+        int StartX = 0;
+        int StartY = 0;
+        int EndX = 0;
+        int EndY = 0;
+        if (Integer.valueOf(Border1.getName())%10 > Integer.valueOf(Border2.getName())%10 && Integer.valueOf(Border1.getName())/10 == Integer.valueOf(Border2.getName())/10) {
+            StartX = Integer.valueOf(Border2.getName())%10;
+            EndX = Integer.valueOf(Border1.getName())%10;
+            StartY = Integer.valueOf(Border1.getName())/10;
+            EndY = StartY;
+        } else if (Integer.valueOf(Border1.getName())/10 > Integer.valueOf(Border2.getName())/10 && Integer.valueOf(Border1.getName())%10 == Integer.valueOf(Border2.getName())%10) {
+            StartY = Integer.valueOf(Border2.getName())/10;
+            EndY = Integer.valueOf(Border1.getName())/10;
+            StartX = Integer.valueOf(Border1.getName())%10;
+            EndX = StartX;
+        }else if (Integer.valueOf(Border1.getName())%10 < Integer.valueOf(Border2.getName())%10 && Integer.valueOf(Border1.getName())/10 == Integer.valueOf(Border2.getName())/10) {
+            StartX = Integer.valueOf(Border1.getName())%10;
+            EndX = Integer.valueOf(Border2.getName())%10;
+            StartY = Integer.valueOf(Border1.getName())/10;
+            EndY = StartY;
+        }else if (Integer.valueOf(Border1.getName())/10 < Integer.valueOf(Border2.getName())/10 && Integer.valueOf(Border1.getName())%10 == Integer.valueOf(Border2.getName())%10) {
+            StartY = Integer.valueOf(Border1.getName())/10;
+            EndY = Integer.valueOf(Border2.getName())/10;
+            StartX = Integer.valueOf(Border1.getName())%10;
+            EndX = StartX;
+        }else if (Integer.valueOf(Border1.getName())/10 == Integer.valueOf(Border2.getName())/10 && Integer.valueOf(Border1.getName())%10 == Integer.valueOf(Border2.getName())%10) {
+            StartX = Integer.valueOf(Border1.getName())%10;
+            EndX = StartX;
+            StartY = Integer.valueOf(Border1.getName())/10;
+            EndY = StartY;
+        }
+        if (StartX - 1 < 0) {
+            StartX += 1;
+        }
+        if (EndX + 2 > 10) {
+            EndX -= 1;
+        }
+        if (StartY - 1 < 0) {
+            StartY += 1;
+        }
+        if (EndY + 2 > 10) {
+            EndY -= 1;
+        }
+        for(int i = StartX - 1; i < EndX + 2; i++) {
+            for(int j = StartY - 1; j < EndY + 2; j++) {
+                if (FieldStatusMassive[i+j*10] == 1) {
+                    FieldStatusMassive[i+j*10] = 2;
+                    FieldMassive[i+j*10].setIcon(new ImageIcon("icons/UnavailableWater.png"));
+                }
+            }
+        }
+    }
     public static void TogglePlayerField(JButton[] FieldMassive, Boolean toggle) {
         for(int i = 0; i < 10; i++) {
             for(int j = 0; j < 10; j++) {
@@ -20,6 +72,7 @@ public class Main {
         byte MultiplierX = 0;
         byte MultiplierY = 0;
         int Delta = 0;
+        boolean Availability = true;
         if (StartX > EndX && StartY == EndY) {
             MultiplierX = -1;
             MultiplierY = 1;
@@ -36,27 +89,45 @@ public class Main {
             MultiplierY = 1;
             MultiplierX = 1;
             Delta = EndY - StartY;
+        }else if (StartY == EndY && StartX == EndX) {
+            MultiplierY = 1;
+            MultiplierX = 1;
         }
-        if ((MultiplierX != 0) && (MultiplierY != 0) && Delta < 4)  {
-            Ships[Delta] += 1;
-            for(int i = Integer.valueOf(Border1.getName())%10; i <= Integer.valueOf(Border2.getName())%10; i = i  + MultiplierX) {
-                for(int j = Integer.valueOf(Border1.getName())/10; j <= Integer.valueOf(Border2.getName())/10; j = j + MultiplierY) {
-                    FieldMassive[i+j*10].setIcon(null);
-                    FieldStatusMassive[i+j*10] = Delta + 3;
+        for(int i = StartX; i < EndX + 1; i++) {
+            for(int j = StartY; j < EndY + 1; j++) {
+                if (FieldStatusMassive[i+j*10] != 1) {
+                    Availability = false;
                 }
             }
-            System.out.println("Placed a " + Delta+1 + "cells ship.");
-            InfoLabel.setText("<html>Ваши корабли<br>Крейсер:" + Ships[3] + "<br>Подводная лодка: " + Ships[2] + "<br>Эсминец: " + Ships[1] + "<br>Фрегат: " + Ships[0] + "</html>");
         }
-        else {
-            Border1 = null;
-            Border2 = null;
+        if (Delta < 4) {
+            if ((MultiplierX != 0) && (MultiplierY != 0) && (Ships[Delta]) != 4 - Delta && Availability){
+                Ships[Delta] += 1;
+                for (int i = Integer.valueOf(Border1.getName()) % 10; i <= Integer.valueOf(Border2.getName()) % 10; i = i + MultiplierX) {
+                    for (int j = Integer.valueOf(Border1.getName()) / 10; j <= Integer.valueOf(Border2.getName()) / 10; j = j + MultiplierY) {
+                        FieldMassive[i + j * 10].setIcon(null);
+                        FieldStatusMassive[i + j * 10] = Delta + 3;
+                    }
+                }
+                MakeCellsUnavailable(Border1,Border2,FieldStatusMassive,FieldMassive);
+                System.out.println("Placed a " + (Delta+1) + "cells ship.");
+                InfoLabel.setText("<html>Ваши корабли<br>Крейсер:" + Ships[3] + "<br>Подводная лодка: " + Ships[2] + "<br>Эсминец: " + Ships[1] + "<br>Фрегат: " + Ships[0] + "</html>");
+            } else if (Ships[Delta] == 4 - Delta) {
+                System.out.println("Warning! Trying to spawn a " + (Delta+1) + " cell ship, but we already have " + Ships[Delta] + " of it!");
+            } else if (!Availability) {
+                System.out.println("Warning! Trying to spawn a cell, but in borders exists unavailable cells, cant spawn!");
+            } else {
+                System.out.println("Unexpected error, cant spawn!");
+            }
+        } else {
             System.out.println("Warning! Trying to spawn a " + (Delta+1) + " cell ship!");
         }
+        Border1 = null;
+        Border2 = null;
     }
 
     public static void main(String[] args){
-        System.out.println("GUI Test Project");
+        System.out.println("Sea Battle");
 
         int FieldSpacing = 60;
          //        ВАЖНО!!!!!!!!!!! 0 - недействителен, 1 - Главное меню, 2 - расстановка игроком, 3 - расстановка ИИ, 4 - ход игрока, 5 - ход ИИ
@@ -167,11 +238,13 @@ public class Main {
                             JButton Cell = (JButton) FieldAction.getSource();   //Действие при нажатии на кнопку=
                             if (CurrentButton1 == null) {
                                 CurrentButton1 = Cell;
-                            } else if (CurrentButton1 != null && CurrentButton2 == null) {
+                                ActionLabel.setText("<html>Расстанавливайте корабли<br>Выберите точку конца корабля</html>");
+                            } else if (CurrentButton2 == null) {
                                 CurrentButton2 = Cell;
                                 CreateShip(FieldMassive, CurrentButton1, CurrentButton2, FieldMassiveStatus, Ships, ShipsInfoLabel);
                                 CurrentButton1 = null;
                                 CurrentButton2 = null;
+                                ActionLabel.setText("<html>Расстанавливайте корабли<br>Выберите точку начала корабля</html>");
                             }
                         }
                         else {
@@ -206,7 +279,7 @@ public class Main {
                     TogglePlayerField(FieldMassive,true);
                     GameStatus = 2;
                     PlayButton.setEnabled(false);
-                    ActionLabel.setText("Расстанавливайте корабли");
+                    ActionLabel.setText("<html>Расстанавливайте корабли<br>Выберите точку начала корабля</html>");
                     ShipsInfoLabel.setText("<html>Ваши корабли<br>Крейсер:" + Ships[3] + "<br>Подводная лодка: " + Ships[2] + "<br>Эсминец: " + Ships[1] + "<br>Фрегат: " + Ships[0] + "</html>");
                 }
             }
